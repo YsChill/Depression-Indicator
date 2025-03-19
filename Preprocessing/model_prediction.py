@@ -1,10 +1,13 @@
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder
 import joblib
+import os
 
 # Step 1: Load dataset from CSV file
 # This reads the student depression dataset into a pandas DataFrame (a table-like structure in Python)
-df = pd.read_csv('Student Depression Dataset.csv')
+script_dir = os.path.dirname(os.path.abspath(__file__))
+dataset_path = os.path.join(script_dir, 'Student Depression Dataset.csv')
+df = pd.read_csv(dataset_path)
 
 # Step 2: Remove unnecessary columns
 # 'id' and 'City' are not useful for our model, so we remove them
@@ -34,7 +37,7 @@ ohe_general_df = pd.DataFrame(encoded_general, columns=ohe_general.get_feature_n
 df = df.drop(columns=categorical_columns).join(ohe_general_df)
 
 # Save the encoder so we can apply the same transformation to future data
-general_encoder_path = 'general_ohe.pkl'
+general_encoder_path = os.path.join(script_dir, 'ohe_general.pkl')
 joblib.dump(ohe_general, general_encoder_path)
 
 # Step 5: Scale numerical features
@@ -43,17 +46,36 @@ scaler = MinMaxScaler(feature_range=(0, 1))
 numerical_columns = ['Age', 'Academic Pressure', 'Work Pressure', 'CGPA', 'Study Satisfaction',
                      'Job Satisfaction', 'Work/Study Hours', 'Financial Stress']
 
-# Apply scaling to numerical columns
+# Convert 'Sleep Duration' into numerical values and scale it
+sleep_mapping = {
+    'Less than 5 hours': 0,
+    '5-6 hours': 0.33,
+    '7-8 hours': 0.66,
+    'More than 8 hours': 1
+}
+df['Sleep Duration'] = df['Sleep Duration'].map(sleep_mapping)
+
+# Convert 'Dietary Habits' into numerical values and scale it
+dietary_mapping = {
+    'Unhealthy': 0,
+    'Moderate': 0.5,
+    'Healthy': 1
+}
+df['Dietary Habits'] = df['Dietary Habits'].map(dietary_mapping)
+
+# Add these to the list of numerical columns to scale
 df[numerical_columns] = scaler.fit_transform(df[numerical_columns])
 
 # Round values to 4 decimal places for neatness
-df[numerical_columns] = df[numerical_columns].round(4)
+df[numerical_columns + ['Sleep Duration', 'Dietary Habits']] = df[numerical_columns + ['Sleep Duration', 'Dietary Habits']].round(4)
 
 # Step 6: Save processed data
-df.to_csv('Processed_Student_Depression_Dataset.csv', index=False)
+processed_data_path = os.path.join(script_dir, 'Processed_Student_Depression_Dataset.csv')
+df.to_csv(processed_data_path, index=False)
 
 # Step 7: Save the scaler for future use
-joblib.dump(scaler, 'minmax_scaler.pkl')
+scaler_path = os.path.join(script_dir, 'minmax_scaler.pkl')
+joblib.dump(scaler, scaler_path)
 
 # Step 8: Save conversion descriptions
 # This file will contain details on how categorical values were transformed and how numerical values were scaled
@@ -74,13 +96,27 @@ for i, feature in enumerate(numerical_columns):
         "Formula": f"(value - {original_min}) / ({original_max} - {original_min})"
     })
 
+# Add mappings for Sleep Duration and Dietary Habits
+scaling_mappings.append({
+    "Feature": "Sleep Duration",
+    "Original Values": sleep_mapping,
+    "Scaled Values": {v: round(v, 2) for v in sleep_mapping.values()}
+})
+
+scaling_mappings.append({
+    "Feature": "Dietary Habits",
+    "Original Values": dietary_mapping,
+    "Scaled Values": {v: round(v, 2) for v in dietary_mapping.values()}
+})
+
 encoding_df = pd.DataFrame.from_dict(encoding_mappings, orient='index').stack().reset_index()
 encoding_df.columns = ['Category', 'Original Value', 'New Value']
 scaling_df = pd.DataFrame(scaling_mappings)
 
 # Merge both categorical and numerical mappings into one file
 conversion_descriptions = pd.concat([encoding_df, scaling_df], ignore_index=True)
-conversion_descriptions.to_csv('Conversion_Descriptions.csv', index=False)
+conversion_descriptions_path = os.path.join(script_dir, 'Conversion_Descriptions.csv')
+conversion_descriptions.to_csv(conversion_descriptions_path, index=False)
 
 # Step 9: Print confirmation messages
 print("Preprocessing complete. Saved dataset:")
