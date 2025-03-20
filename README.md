@@ -20,8 +20,8 @@ This repository contains a Python script that preprocesses the **Student Depress
 ## 🛠 Installation
 1. **Clone this repository:**
    ```sh
-   git clone https://github.com/yschill/student-depression-preprocessing.git
-   cd student-depression-preprocessing
+   git clone [https://github.com/yschill/student-depression-preprocessing.git](https://github.com/YsChill/Depression-Indicator.git)
+   cd Depression-Indicator
    ```
 2. **Install dependencies:**
    ```sh
