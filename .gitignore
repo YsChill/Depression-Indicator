@@ -1,3 +1,5 @@
-Ignore Python virtual environment
-
+# Ignore Python virtual environment
 venv/
+
+# Ignore pickle model files
+*.pkl
